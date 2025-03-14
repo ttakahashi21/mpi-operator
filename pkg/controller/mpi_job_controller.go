@@ -648,7 +648,10 @@ func (c *MPIJobController) syncHandler(key string) error {
 			return fmt.Errorf("creating SSH auth secret: %w", err)
 		}
 
+		fmt.Printf("mpijob : %s - takahashi \n", mpiJob)
+		fmt.Printf("check-!isMPIJobSuspended(mpiJob) : %t - takahashi \n", !isMPIJobSuspended(mpiJob))
 		if !isMPIJobSuspended(mpiJob) {
+			fmt.Printf("!isMPIJobSuspended(mpiJob): true - takahashi\n")
 			// Get the PodGroup for this MPIJob
 			if c.PodGroupCtrl != nil {
 				if podGroup, err := c.getOrCreatePodGroups(mpiJob); podGroup == nil || err != nil {
@@ -660,9 +663,18 @@ func (c *MPIJobController) syncHandler(key string) error {
 				return err
 			}
 		}
+		fmt.Printf("check-launcher - takahashi \n")
 		if launcher == nil {
+			fmt.Printf("launcher == nil: true - takahashi\n")
+			fmt.Printf("mpiJob.Spec.LauncherCreationPolicy : %s - takahashi \n", mpiJob.Spec.LauncherCreationPolicy)
+			fmt.Printf("c.countReadyWorkerPods(worker) : %d - takahashi \n", c.countReadyWorkerPods(worker))
+			fmt.Printf("len(worker) : %d - takahashi \n", len(worker))
+
 			if mpiJob.Spec.LauncherCreationPolicy == kubeflow.LauncherCreationPolicyAtStartup || c.countReadyWorkerPods(worker) == len(worker) {
+				fmt.Printf("mpiJob.Spec.LauncherCreationPolicy == kubeflow.LauncherCreationPolicyAtStartup || c.countReadyWorkerPods(checkworker) == len(checkworker): true - takahashi\n")
 				launcher, err = c.kubeClient.BatchV1().Jobs(namespace).Create(context.TODO(), c.newLauncherJob(mpiJob), metav1.CreateOptions{})
+				fmt.Printf("deploy launcher - takahashi\n")
+				time.Sleep(10 * time.Second)
 				if err != nil {
 					c.recorder.Eventf(mpiJob, corev1.EventTypeWarning, mpiJobFailedReason, "launcher pod created failed: %v", err)
 					return fmt.Errorf("creating launcher Pod: %w", err)
